@@ -17,8 +17,9 @@ STATION_TEMPLATE = "template"
 STATION_UNZIP = "unzip"
 STATION_BUILD = "build"
 STATION_TERMINATE = "terminate"
+STARTUP_SCREEN = "startup"
 
-current_station = STATION_TEMPLATE
+current_station = STARTUP_SCREEN
 
 # Define colors
 WHITE = (255, 255, 255)
@@ -34,13 +35,16 @@ BASE_PAIRS = {
     "G": "C"
 }
 
+
 # Pizza object
 class Pizza:
     def __init__(self):
         self.player_strand = [""] * 8
         self.bake_time = 0
 
+
 pizza = Pizza()
+
 
 # Button class
 class Button:
@@ -57,6 +61,7 @@ class Button:
 
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
+
 
 # Draggable base class
 class DraggableBase:
@@ -76,6 +81,7 @@ class DraggableBase:
     def reset_position(self):
         self.rect.topleft = self.original_pos
 
+
 # Customer logic
 class Customer:
     def __init__(self, name):
@@ -88,16 +94,25 @@ class Customer:
     def get_complement(self):
         return ''.join(BASE_PAIRS[b] for b in self.template)
 
+
 # Initial customer
 customer_names = ["Lena", "Max", "Zoe", "Kai", "Dr. Byte"]
 current_customer = Customer(random.choice(customer_names))
 
-# Buttons for navigation
+# Buttons for navigation (repositioned to the bottom)
+button_width, button_height = 120, 50
+button_padding = 20
 buttons = [
-    Button((20, 20, 120, 50), "Order", STATION_TEMPLATE),
-    Button((150, 20, 120, 50), "Unzip", STATION_UNZIP),
-    Button((280, 20, 120, 50), "Build", STATION_BUILD),
-    Button((410, 20, 120, 50), "Send", STATION_TERMINATE),
+    Button((button_padding, HEIGHT - button_height - button_padding, button_width, button_height), "Order",
+           STATION_TEMPLATE),
+    Button((button_padding * 2 + button_width, HEIGHT - button_height - button_padding, button_width, button_height),
+           "Unzip", STATION_UNZIP),
+    Button(
+        (button_padding * 3 + button_width * 2, HEIGHT - button_height - button_padding, button_width, button_height),
+        "Build", STATION_BUILD),
+    Button(
+        (button_padding * 4 + button_width * 3, HEIGHT - button_height - button_padding, button_width, button_height),
+        "Send", STATION_TERMINATE),
 ]
 
 # Draggable bases (A, T, C, G)
@@ -108,46 +123,65 @@ for i, base in enumerate(base_options):
     y = 150 + i * 60
     draggable_bases.append(DraggableBase(base, (x, y)))
 
+# Load the drag zone image (use your image file path here)
+drag_zone_image = pygame.image.load("circle sig.png")  # Replace with actual image path
+drag_zone_rect = drag_zone_image.get_rect(center=(WIDTH // 2, HEIGHT // 3))  # Position it higher
+
+# Load different backgrounds for each station
+background_images = {
+    STATION_TEMPLATE: pygame.image.load("Martinez special.png"),  # Replace with your image path
+    STATION_UNZIP: pygame.image.load("Meisters.jpeg"),  # Replace with your image path
+    STATION_BUILD: pygame.image.load("mika pikazo.png"),  # Replace with your image path
+    STATION_TERMINATE: pygame.image.load("mina.jpg"),  # Replace with your image path
+    STARTUP_SCREEN: pygame.image.load("moonwalk.png")  # Replace with your image path
+}
+
+# Background Image (startup screen)
+background_image = background_images[STARTUP_SCREEN]
+
+
 # Drawing functions
 def draw_station():
     screen.fill(WHITE)
 
-    # Draw nav buttons
-    for button in buttons:
-        button.draw(screen)
+    # Draw the background for the current station
+    screen.blit(background_image, (0, 0))
 
     # Draw content for current station
-    if current_station == STATION_TEMPLATE:
-        draw_text_center("Order Station - DNA template orders", screen)
+    if current_station == STARTUP_SCREEN:
+        draw_startup_screen()
+
+    elif current_station == STATION_TEMPLATE:
         draw_text_below(f"{current_customer.name}'s Order:", 320)
         draw_text_below(f"DNA Template: {current_customer.template}", 360)
 
     elif current_station == STATION_UNZIP:
-        draw_text_center("Unzip Station - Unzip the DNA", screen)
-
-        # Left strand (template)
-        for i, base in enumerate(current_customer.template):
+        # Draw template strand (left)
+        template = current_customer.template
+        for i, base in enumerate(template):
             base_surf = font.render(base, True, RED)
-            screen.blit(base_surf, (WIDTH//2 - 100, 150 + i * 40))
+            x = WIDTH // 2 - 100
+            y = 150 + i * 40
+            screen.blit(base_surf, (x, y))
 
-        # Right strand (complement)
-        for i, base in enumerate(current_customer.get_complement()):
-            base_surf = font.render(base, True, BLACK)
-            screen.blit(base_surf, (WIDTH//2 + 100, 150 + i * 40))
+        # Draw placeholder for complementary strand (right)
+        for i in range(len(template)):
+            base_surf = font.render("_", True, BLACK)
+            x = WIDTH // 2 + 100
+            y = 150 + i * 40
+            screen.blit(base_surf, (x, y))
 
     elif current_station == STATION_BUILD:
-        draw_text_center("Build Station - Build the DNA", screen)
-
         # Template strand
         for i, base in enumerate(current_customer.template):
             base_surf = font.render(base, True, RED)
-            screen.blit(base_surf, (WIDTH//2 - 100, 150 + i * 40))
+            screen.blit(base_surf, (WIDTH // 2 - 100, 150 + i * 40))
 
         # Player's strand
         for i, base in enumerate(pizza.player_strand):
             char = base if base else "_"
             base_surf = font.render(char, True, BLACK)
-            screen.blit(base_surf, (WIDTH//2 + 100, 150 + i * 40))
+            screen.blit(base_surf, (WIDTH // 2 + 100, 150 + i * 40))
 
         # Draggable bases
         for base in draggable_bases:
@@ -155,17 +189,37 @@ def draw_station():
 
     elif current_station == STATION_TERMINATE:
         check_order_correctness()
-        draw_text_center("Send Out - Send DNA to customer", screen)
+
+        # Draw the custom drag zone image only on the Send station
+        screen.blit(drag_zone_image, drag_zone_rect.topleft)
+        draw_text_below("Drag the DNA here!", HEIGHT // 3 + 60)
+
+    # Draw nav buttons at the bottom of the screen
+    for button in buttons:
+        button.draw(screen)
+
+
+def draw_startup_screen():
+    # Draw title text
+    title_surf = font.render("DNA Pizzeria", True, RED)
+    title_rect = title_surf.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+    screen.blit(title_surf, title_rect)
+
+    # Draw Start Button
+    start_button = Button((WIDTH // 2 - 100, HEIGHT // 2, 200, 50), "Start Game", STATION_TEMPLATE)
+    start_button.draw(screen)
 
 def draw_text_center(text, surface):
     txt_surf = font.render(text, True, BLACK)
     txt_rect = txt_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2))
     surface.blit(txt_surf, txt_rect)
 
+
 def draw_text_below(text, y):
     txt_surf = font.render(text, True, BLACK)
     txt_rect = txt_surf.get_rect(center=(WIDTH // 2, y))
     screen.blit(txt_surf, txt_rect)
+
 
 def check_order_correctness():
     correct_strand = current_customer.get_complement()
@@ -176,6 +230,18 @@ def check_order_correctness():
         draw_text_center("Order Sent! Correct DNA!", screen)
     else:
         draw_text_center("Incorrect DNA! Try Again.", screen)
+
+
+def reset_game():
+    # Reset pizza strand and generate a new customer order
+    pizza.player_strand = [""] * 8
+    global current_customer
+    current_customer = Customer(random.choice(customer_names))
+
+    # Go back to the Order Station to start a new order
+    global current_station
+    current_station = STATION_TEMPLATE
+
 
 # Main game loop
 running = True
@@ -189,6 +255,14 @@ while running:
             for button in buttons:
                 if button.is_clicked(pos):
                     current_station = button.target_state
+                    # Update the background for the new station
+                    background_image = background_images[current_station]
+
+            # Check for start button on startup screen
+            if current_station == STARTUP_SCREEN:
+                if pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50).collidepoint(pos):
+                    current_station = STATION_TEMPLATE
+                    background_image = background_images[STATION_TEMPLATE]
 
             for base in draggable_bases:
                 if base.rect.collidepoint(pos):
@@ -204,10 +278,16 @@ while running:
                     base.dragging = False
                     # Try to place on strand
                     for i in range(len(pizza.player_strand)):
-                        slot_rect = pygame.Rect(WIDTH//2 + 100, 150 + i * 40, 30, 30)
+                        slot_rect = pygame.Rect(WIDTH // 2 + 100, 150 + i * 40, 30, 30)
                         if slot_rect.collidepoint(base.rect.center):
                             pizza.player_strand[i] = base.base
                             break
+
+                    # Check if player placed the strand in the drop zone
+                    if current_station == STATION_TERMINATE and drag_zone_rect.collidepoint(base.rect.center):
+                        check_order_correctness()  # Verify the order
+                        reset_game()  # Reset the game
+
                     base.reset_position()
 
         elif event.type == pygame.MOUSEMOTION:
