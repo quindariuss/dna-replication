@@ -95,7 +95,7 @@ class Customer:
 
 
 # Initial customer
-customer_names = ["Lena", "Max", "Zoe", "Kai", "Dr. Byte"]
+customer_names = ["Pent.S.", "Nitro.B.", "Phos.G."]
 current_customer = Customer(random.choice(customer_names))
 
 # Buttons for navigation (repositioned to the bottom)
@@ -126,7 +126,7 @@ for i, base in enumerate(base_options):
 DROP_ZONE = pygame.Rect(WIDTH // 2 - 50, 50, 100, 50)
 
 # Background Image (if you have one)
-background_image = pygame.image.load("B-M0.jpg")  # Path to the image (Replace with your image)
+background_image = pygame.image.load()  # Path to the image (Replace with your image)
 
 
 # Drawing functions
