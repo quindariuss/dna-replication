@@ -123,29 +123,16 @@ for i, base in enumerate(base_options):
     y = 150 + i * 60
     draggable_bases.append(DraggableBase(base, (x, y)))
 
-# Load the drag zone image (use your image file path here)
-drag_zone_image = pygame.image.load("circle sig.png")  # Replace with actual image path
-drag_zone_rect = drag_zone_image.get_rect(center=(WIDTH // 2, HEIGHT // 3))  # Position it higher
+# Drop zone for the final DNA (the customer area) - moved to the top
+DROP_ZONE = pygame.Rect(WIDTH // 2 - 50, 50, 100, 50)
 
-# Load different backgrounds for each station
-background_images = {
-    STATION_TEMPLATE: pygame.image.load("Martinez special.png"),  # Replace with your image path
-    STATION_UNZIP: pygame.image.load("Meisters.jpeg"),  # Replace with your image path
-    STATION_BUILD: pygame.image.load("mika pikazo.png"),  # Replace with your image path
-    STATION_TERMINATE: pygame.image.load("mina.jpg"),  # Replace with your image path
-    STARTUP_SCREEN: pygame.image.load("moonwalk.png")  # Replace with your image path
-}
-
-# Background Image (startup screen)
-background_image = background_images[STARTUP_SCREEN]
+# Background Image (if you have one)
+background_image = pygame.image.load("B-M0.jpg")  # Path to the image (Replace with your image)
 
 
 # Drawing functions
 def draw_station():
     screen.fill(WHITE)
-
-    # Draw the background for the current station
-    screen.blit(background_image, (0, 0))
 
     # Draw content for current station
     if current_station == STARTUP_SCREEN:
@@ -190,9 +177,9 @@ def draw_station():
     elif current_station == STATION_TERMINATE:
         check_order_correctness()
 
-        # Draw the custom drag zone image only on the Send station
-        screen.blit(drag_zone_image, drag_zone_rect.topleft)
-        draw_text_below("Drag the DNA here!", HEIGHT // 3 + 60)
+        # Draw drop zone (now at the top of the screen)
+        pygame.draw.rect(screen, RED, DROP_ZONE, 2)
+        draw_text_below("Drag the DNA here!", 120)  # Adjusted the position of the text
 
     # Draw nav buttons at the bottom of the screen
     for button in buttons:
@@ -200,6 +187,9 @@ def draw_station():
 
 
 def draw_startup_screen():
+    # Draw background
+    screen.blit(background_image, (0, 0))
+
     # Draw title text
     title_surf = font.render("DNA Pizzeria", True, RED)
     title_rect = title_surf.get_rect(center=(WIDTH // 2, HEIGHT // 3))
@@ -208,6 +198,7 @@ def draw_startup_screen():
     # Draw Start Button
     start_button = Button((WIDTH // 2 - 100, HEIGHT // 2, 200, 50), "Start Game", STATION_TEMPLATE)
     start_button.draw(screen)
+
 
 def draw_text_center(text, surface):
     txt_surf = font.render(text, True, BLACK)
@@ -255,14 +246,11 @@ while running:
             for button in buttons:
                 if button.is_clicked(pos):
                     current_station = button.target_state
-                    # Update the background for the new station
-                    background_image = background_images[current_station]
 
             # Check for start button on startup screen
             if current_station == STARTUP_SCREEN:
                 if pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50).collidepoint(pos):
                     current_station = STATION_TEMPLATE
-                    background_image = background_images[STATION_TEMPLATE]
 
             for base in draggable_bases:
                 if base.rect.collidepoint(pos):
@@ -284,7 +272,7 @@ while running:
                             break
 
                     # Check if player placed the strand in the drop zone
-                    if current_station == STATION_TERMINATE and drag_zone_rect.collidepoint(base.rect.center):
+                    if current_station == STATION_TERMINATE and DROP_ZONE.collidepoint(base.rect.center):
                         check_order_correctness()  # Verify the order
                         reset_game()  # Reset the game
 
