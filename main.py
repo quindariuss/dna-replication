@@ -224,12 +224,10 @@ def check_order_correctness():
 
 
 def reset_game():
-    # Reset pizza strand and generate a new customer order
     pizza.player_strand = [""] * 8
     global current_customer
     current_customer = Customer(random.choice(customer_names))
 
-    # Go back to the Order Station to start a new order
     global current_station
     current_station = STATION_TEMPLATE
 
@@ -247,7 +245,6 @@ while running:
                 if button.is_clicked(pos):
                     current_station = button.target_state
 
-            # Check for start button on startup screen
             if current_station == STARTUP_SCREEN:
                 if pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50).collidepoint(pos):
                     current_station = STATION_TEMPLATE
@@ -264,17 +261,15 @@ while running:
             for base in draggable_bases:
                 if base.dragging:
                     base.dragging = False
-                    # Try to place on strand
                     for i in range(len(pizza.player_strand)):
                         slot_rect = pygame.Rect(WIDTH // 2 + 100, 150 + i * 40, 30, 30)
                         if slot_rect.collidepoint(base.rect.center):
                             pizza.player_strand[i] = base.base
                             break
 
-                    # Check if player placed the strand in the drop zone
                     if current_station == STATION_TERMINATE and DROP_ZONE.collidepoint(base.rect.center):
-                        check_order_correctness()  # Verify the order
-                        reset_game()  # Reset the game
+                        check_order_correctness()
+                        reset_game()
 
                     base.reset_position()
 
