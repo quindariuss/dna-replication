@@ -27,7 +27,6 @@ GRAY = (200, 200, 200)
 BLACK = (0, 0, 0)
 RED = (255, 100, 100)
 
-# DNA base pairs
 BASE_PAIRS = {
     "A": "T",
     "T": "A",
