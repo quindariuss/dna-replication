@@ -32,6 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           path: ./build/web
+          name: github-pages
 
   deploy:
     needs: build
