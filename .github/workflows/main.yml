@@ -23,8 +23,14 @@ jobs:
       - name: Build with pygbag
         run: pygbag --build .
 
+      - name: Deploy GitHub Pages site
+        uses: actions/deploy-pages@v4.0.5
+
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
+
+
