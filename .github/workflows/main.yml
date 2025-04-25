@@ -32,12 +32,11 @@ jobs:
 
       # ────────────────────────────────────────────────
       # Copy & dereference symlinks into a fresh folder
-      - name: Prepare Pages folder (dereference symlinks)
+      - name: Prepare deploy folder
         run: |
-          rm -rf deploy
           mkdir deploy
-          # -a = archive, -L = dereference symlinks into real files
-          rsync -aL build/web/ deploy/
+          rsync -aL . deploy/
+          rm -rf deploy/.github  # don't publish GitHub configs
       # ────────────────────────────────────────────────
 
       - name: Upload GitHub Pages artifact
