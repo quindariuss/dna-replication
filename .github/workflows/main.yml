@@ -28,10 +28,20 @@ jobs:
       - name: Build with pygbag
         run: pygbag --build .
 
+      # ────────────────────────────────────────────────
+      # Copy & dereference symlinks into a fresh folder
+      - name: Prepare Pages folder (dereference symlinks)
+        run: |
+          rm -rf deploy
+          mkdir deploy
+          # -a = archive, -L = dereference symlinks into real files
+          rsync -aL build/web/ deploy/
+      # ────────────────────────────────────────────────
+
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-pages-artifact@v1
         with:
-          path: ./build/web
+          path: deploy
           name: github-pages
 
   deploy:
