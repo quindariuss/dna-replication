@@ -1,5 +1,4 @@
 import pygame
-import sys
 import random
 from os.path import join
 
@@ -11,7 +10,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("DNA Pizzeria")
 
 clock = pygame.time.Clock()
-font = pygame.font.SysFont("comicsans", 36)
+font = pygame.font.Font(None, 36)  # Use default font for web compatibility
 
 # Define game states
 STATION_TEMPLATE = "template"
@@ -300,4 +299,3 @@ while running:
     clock.tick(60)
 
 pygame.quit()
-sys.exit()
