@@ -17,7 +17,7 @@ STATION_DELIVERY = 4
 
 # Music
 pygame.mixer.init()
-pygame.mixer.music.load(join("assets", "bgmusic.mp3"))
+pygame.mixer.music.load(join("assets", "bgmusic.ogg"))
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
