@@ -246,7 +246,7 @@ def draw_delivery_station():
     if player_strand == correct_strand:
         review_text = "Great Job! Customer is happy! Perfect!"
     else:
-        review_text = "Oops! Customer is upset! They got a weird Pizza?"
+        review_text = "Customer is upset! They got a weird Pizza?"
 
     review_surface = font_main.render(review_text, True, BLACK)
     screen.blit(review_surface, (WIDTH // 2 - review_surface.get_width() // 2, HEIGHT // 2 - 50))
