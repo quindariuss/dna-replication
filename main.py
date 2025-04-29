@@ -40,18 +40,16 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("DNA Pizzeria")
 clock = pygame.time.Clock()
 
-# Load font once
+# Font setup
 font_main = pygame.font.Font(join("assets", "fonts", "Ldfcomicsansbold-zgma.ttf"), 36)
 
-# Load assets
+# Background assets
 background_startup = pygame.image.load(join("assets", "restaurant.png"))
 logo_image = pygame.image.load(join("assets", "logo.png"))
 logo_rect = logo_image.get_rect(center=(WIDTH // 2, HEIGHT // 3))
-
 background_unzip_1 = pygame.image.load(join("assets", "zipped.png"))
 background_unzip_2 = pygame.image.load(join("assets", "unzipped.png"))
 background_build = pygame.image.load(join("assets", "unzipped.png"))
-
 overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 overlay.fill((255, 255, 255, 128))  # 50% transparent white
 
@@ -61,7 +59,7 @@ customer_data = {
     "Phos.G.": {"delivery_zone": "2.png", "background": "Phos_g_bubble.png", "delivery_bg": "Phos_g.png"}
 }
 
-# Draggable base class
+# Draggable nucleotides
 class DraggableBase:
     def __init__(self, base, pos):
         self.base = base
@@ -79,7 +77,7 @@ class DraggableBase:
     def reset_position(self):
         self.rect.topleft = self.original_pos
 
-# Draggable bases (A, T, C, G)
+# bases (A, T, C, G)
 draggable_bases = []
 base_options = ["A", "T", "C", "G"]
 for i, base in enumerate(base_options):
@@ -104,10 +102,10 @@ class Customer:
 
 class Pizza:
     def __init__(self):
-        self.player_strand = [""] * 8  # For the player's complementary strand
-        self.dragging_base = None  # To track which base is being dragged
-        self.base_positions = [(100 + i * 40, 200) for i in range(8)]  # Target locations for the complementary strand
-        self.dragged_bases = []  # To track the base pairs to be dragged
+        self.player_strand = [""] * 8
+        self.dragging_base = None
+        self.base_positions = [(100 + i * 40, 200) for i in range(8)]
+        self.dragged_bases = []
 
     def create_draggable_bases(self):
         self.dragged_bases = [
@@ -118,7 +116,7 @@ class Pizza:
     def check_drop(self, mouse_pos):
         for i, base_rect in enumerate(self.dragged_bases):
             if base_rect["rect"].collidepoint(mouse_pos):
-                return i  # Return the index of the base being dragged
+                return i
         return None
 
     def update_base_position(self, base_index, target_position):
@@ -131,7 +129,7 @@ class Pizza:
 
     def draw(self, surface):
         for base in self.dragged_bases:
-            pygame.draw.rect(surface, (0, 0, 0), base["rect"])  # Draw the base
+            pygame.draw.rect(surface, (0, 0, 0), base["rect"])
 
         # Draw player strand
         for i, base in enumerate(self.player_strand):
