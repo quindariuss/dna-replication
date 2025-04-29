@@ -4,11 +4,11 @@ from os.path import join
 
 pygame.init()
 
-# Constants
+# Settings
 WIDTH, HEIGHT = 800, 600
 FPS = 60
 
-# Station states
+# Stations
 STARTUP_SCREEN = 0
 STATION_TEMPLATE = 1
 STATION_UNZIP = 2
@@ -30,7 +30,10 @@ GRAY = (200, 200, 200)
 RED = (255, 100, 100)
 
 # Base pair mappings
-BASE_PAIRS = {"A": "T", "T": "A", "C": "G", "G": "C"}
+BASE_PAIRS = {"A": "T",
+              "T": "A",
+              "C": "G",
+              "G": "C"}
 
 # Setup display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
