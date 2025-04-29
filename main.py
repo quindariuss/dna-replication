@@ -4,84 +4,68 @@ from os.path import join
 
 pygame.init()
 
-# Window setup
+# Constants
 WIDTH, HEIGHT = 800, 600
+FPS = 60
+
+# Station states
+STARTUP_SCREEN = 0
+STATION_TEMPLATE = 1
+STATION_UNZIP = 2
+STATION_BUILD = 3
+STATION_DELIVERY = 4
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BUTTON_COLOR = (100, 100, 255)
+BUTTON_HOVER_COLOR = (150, 150, 255)
+
+# Base pair mappings
+BASE_PAIRS = {"A": "T", "T": "A", "C": "G", "G": "C"}
+
+# Setup display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("DNA Pizzeria")
-
 clock = pygame.time.Clock()
-font = pygame.font.Font(None, 36)  # Use default font for web compatibility
 
-# Define game states
-STATION_TEMPLATE = "template"
-STATION_UNZIP = "unzip"
-STATION_BUILD = "build"
-STATION_TERMINATE = "terminate"
-STARTUP_SCREEN = "startup"
+# Load assets
+background_startup = pygame.image.load(join("assets", "restaurant.png"))  # Custom background image
+logo_image = pygame.image.load(join("assets", "logo.png"))  # Logo image for the title
+logo_rect = logo_image.get_rect(center=(WIDTH // 2, HEIGHT // 3))  # Center the logo
 
-current_station = STARTUP_SCREEN
+# Create a semi-transparent white overlay (alpha = 128 out of 255 for 50% transparency)
+overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+overlay.fill((255, 255, 255, 128))  # RGB color with alpha (255 is white, 128 is the transparency)
 
-# Define colors
-WHITE = (255, 255, 255)
-GRAY = (200, 200, 200)
-BLACK = (0, 0, 0)
-RED = (255, 100, 100)
-
-BASE_PAIRS = {
-    "A": "T",
-    "T": "A",
-    "C": "G",
-    "G": "C"
+# Customer images (delivery zone, template background, and delivery background)
+customer_data = {
+    "Pent.S.": {
+        "delivery_zone": "3.png",
+        "background": "Pent_s_bubble.png",
+        "delivery_bg": "Pent_s.png"
+    },
+    "Nitro.B.": {
+        "delivery_zone": "1.png",
+        "background": "Nitro_b_bubble.png",
+        "delivery_bg": "Nitro_b.png"
+    },
+    "Phos.G.": {
+        "delivery_zone": "2.png",
+        "background": "Phos_g_bubble.png",
+        "delivery_bg": "Phos_g.png"
+    }
 }
 
-# Pizza object
-class Pizza:
-    def __init__(self):
-        self.player_strand = [""] * 8
-        self.bake_time = 0
 
-pizza = Pizza()
-
-# Button class
-class Button:
-    def __init__(self, rect, text, target_state):
-        self.rect = pygame.Rect(rect)
-        self.text = text
-        self.target_state = target_state
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, GRAY, self.rect)
-        txt_surf = font.render(self.text, True, BLACK)
-        txt_rect = txt_surf.get_rect(center=self.rect.center)
-        surface.blit(txt_surf, txt_rect)
-
-    def is_clicked(self, pos):
-        return self.rect.collidepoint(pos)
-
-# Draggable base class
-class DraggableBase:
-    def __init__(self, base, pos):
-        self.base = base
-        self.original_pos = pos
-        self.rect = pygame.Rect(pos[0], pos[1], 40, 40)
-        self.dragging = False
-        self.offset = (0, 0)
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, GRAY, self.rect)
-        txt_surf = font.render(self.base, True, BLACK)
-        txt_rect = txt_surf.get_rect(center=self.rect.center)
-        surface.blit(txt_surf, txt_rect)
-
-    def reset_position(self):
-        self.rect.topleft = self.original_pos
-
-# Customer logic
+# Classes
 class Customer:
-    def __init__(self, name, delivery_zone):
+    def __init__(self, name, delivery_zone, background, delivery_bg):
         self.name = name
         self.template = self.generate_template()
         self.delivery_zone = delivery_zone
+        self.background = background
+        self.delivery_bg = delivery_bg
 
     def generate_template(self):
         return ''.join(random.choices(list(BASE_PAIRS.keys()), k=8))
@@ -89,213 +73,206 @@ class Customer:
     def get_complement(self):
         return ''.join(BASE_PAIRS[b] for b in self.template)
 
-# Product class
-class Product:
-    def __init__(self, pos):
-        self.rect = pygame.Rect(pos[0], pos[1], 120, 50)
-        self.original_pos = pos
-        self.dragging = False
-        self.offset = (0, 0)
+
+class DNAProduct:
+    def __init__(self):
         self.visible = False
-        self.label = "DNA Pizza"
+        self.x = 640
+        self.y = 360
+        self.velocity = 5
 
     def draw(self, surface):
         if self.visible:
-            pygame.draw.rect(surface, (150, 200, 255), self.rect)
-            txt = font.render(self.label, True, BLACK)
-            txt_rect = txt.get_rect(center=self.rect.center)
-            surface.blit(txt, txt_rect)
+            pygame.draw.rect(surface, BLACK, (self.x, self.y, 50, 30))
 
     def reset_position(self):
-        self.rect.topleft = self.original_pos
+        self.x = 640
+        self.y = 360
 
-product = Product((WIDTH // 2 - 60, 400))
 
-# Initial customer and delivery zones
-customer_data = {
-    "Pent.S.": "3.png",
-    "Nitro.B.": "1.png",
-    "Phos.G.": "2.png"
-}
-current_customer_name = random.choice(list(customer_data.keys()))
-current_customer = Customer(current_customer_name, customer_data[current_customer_name])
+class Pizza:
+    def __init__(self):
+        self.player_strand = [""] * 8
 
-delivery_zone_image = pygame.image.load(join("assets", current_customer.delivery_zone))
 
-# Buttons for navigation
-button_width, button_height = 120, 50
-button_padding = 20
-buttons = [
-    Button((button_padding, HEIGHT - button_height - button_padding, button_width, button_height), "Order", STATION_TEMPLATE),
-    Button((button_padding * 2 + button_width, HEIGHT - button_height - button_padding, button_width, button_height), "Unzip", STATION_UNZIP),
-    Button((button_padding * 3 + button_width * 2, HEIGHT - button_height - button_padding, button_width, button_height), "Build", STATION_BUILD),
-    Button((button_padding * 4 + button_width * 3, HEIGHT - button_height - button_padding, button_width, button_height), "Send", STATION_TERMINATE),
-]
+# Functions
+def draw_startup_screen():
+    # Draw the background image
+    screen.blit(background_startup, (0, 0))
 
-# Draggable bases (A, T, C, G)
-draggable_bases = []
-base_options = ["A", "T", "C", "G"]
-for i, base in enumerate(base_options):
-    x = 600
-    y = 150 + i * 60
-    draggable_bases.append(DraggableBase(base, (x, y)))
+    # Apply the semi-transparent white overlay
+    screen.blit(overlay, (0, 0))
 
-DROP_ZONE = pygame.Rect(WIDTH // 2 - 50, 50, 100, 50)
-background_image = pygame.image.load(join("assets", "restaurant.png"))
+    # Logo image
+    screen.blit(logo_image, logo_rect)
+
+    # Button for starting the game
+    button_width = 200
+    button_height = 50
+    start_button_rect = pygame.Rect(WIDTH // 2 - button_width // 2, HEIGHT // 2 + 50, button_width, button_height)
+
+    # Button color change on hover
+    if start_button_rect.collidepoint(pygame.mouse.get_pos()):
+        pygame.draw.rect(screen, BUTTON_HOVER_COLOR, start_button_rect)
+    else:
+        pygame.draw.rect(screen, BUTTON_COLOR, start_button_rect)
+
+    # Button text
+    font = pygame.font.Font(None, 36)
+    button_text = font.render("Start Game", True, BLACK)
+    screen.blit(button_text, (start_button_rect.x + (button_width - button_text.get_width()) // 2,
+                             start_button_rect.y + (button_height - button_text.get_height()) // 2))
+
+    # Handle button click
+    if pygame.mouse.get_pressed()[0] and start_button_rect.collidepoint(pygame.mouse.get_pos()):
+        global current_station
+        current_station = STATION_TEMPLATE
+        reset_game()
+
 
 def draw_station():
-    screen.fill(WHITE)
+    screen.blit(station_background_image, (0, 0))
 
-    if current_station == STARTUP_SCREEN:
-        draw_startup_screen()
-
-    elif current_station == STATION_TEMPLATE:
-        draw_text_below(f"{current_customer.name}'s Order:", 320)
-        draw_text_below(f"DNA Template: {current_customer.template}", 360)
-
+    if current_station == STATION_TEMPLATE:
+        draw_template_station()
     elif current_station == STATION_UNZIP:
-        template = current_customer.template
-        for i, base in enumerate(template):
-            base_surf = font.render(base, True, RED)
-            x = WIDTH // 2 - 100
-            y = 150 + i * 40
-            screen.blit(base_surf, (x, y))
-
-        for i in range(len(template)):
-            base_surf = font.render("_", True, BLACK)
-            x = WIDTH // 2 + 100
-            y = 150 + i * 40
-            screen.blit(base_surf, (x, y))
-
+        draw_unzip_station()
     elif current_station == STATION_BUILD:
-        for i, base in enumerate(current_customer.template):
-            base_surf = font.render(base, True, RED)
-            screen.blit(base_surf, (WIDTH // 2 - 100, 150 + i * 40))
+        draw_build_station()
+    elif current_station == STATION_DELIVERY:
+        draw_delivery_station()
 
-        for i, base in enumerate(pizza.player_strand):
-            char = base if base else "_"
-            base_surf = font.render(char, True, BLACK)
-            screen.blit(base_surf, (WIDTH // 2 + 100, 150 + i * 40))
+    draw_station_buttons()
 
-        for base in draggable_bases:
-            base.draw(screen)
 
-    elif current_station == STATION_TERMINATE:
-        check_order_correctness()
-        pygame.draw.rect(screen, RED, DROP_ZONE, 2)
-        product.draw(screen)
+def draw_station_buttons():
+    button_width = 180
+    button_height = 50
+    y_position = HEIGHT - button_height - 10
+    buttons = [
+        ("Template", STATION_TEMPLATE),
+        ("Unzip", STATION_UNZIP),
+        ("Build", STATION_BUILD),
+        ("Delivery", STATION_DELIVERY)
+    ]
 
-        # Scale the delivery zone image and position it at the drop zone location
-        scaled_delivery_zone_image = pygame.transform.scale(delivery_zone_image, (250, 250))
-        screen.blit(scaled_delivery_zone_image, (DROP_ZONE.centerx - 137, DROP_ZONE.centery - 90))
+    for i, (text, station) in enumerate(buttons):
+        x_position = i * (button_width + 10) + 10
+        rect = pygame.Rect(x_position, y_position, button_width, button_height)
 
-    if current_station != STARTUP_SCREEN:  # Show station buttons only after startup screen
-        for button in buttons:
-            button.draw(screen)
+        # Button color change on hover
+        if rect.collidepoint(pygame.mouse.get_pos()):
+            pygame.draw.rect(screen, BUTTON_HOVER_COLOR, rect)
+        else:
+            pygame.draw.rect(screen, BUTTON_COLOR, rect)
 
-def draw_startup_screen():
-    screen.blit(background_image, (0, 0))
-    title_surf = font.render("DNA Pizzeria", True, RED)
-    title_rect = title_surf.get_rect(center=(WIDTH // 2, HEIGHT // 3))
-    screen.blit(title_surf, title_rect)
+        # Button text
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(text, True, BLACK)
+        screen.blit(text_surface, (x_position + (button_width - text_surface.get_width()) // 2,
+                                   y_position + (button_height - text_surface.get_height()) // 2))
 
-    start_button = Button((WIDTH // 2 - 100, HEIGHT // 2, 200, 50), "Start Game", STATION_TEMPLATE)
-    start_button.draw(screen)
+        # Handle button click
+        if pygame.mouse.get_pressed()[0] and rect.collidepoint(pygame.mouse.get_pos()):
+            global current_station
+            current_station = station
+            update_backgrounds()
 
-def draw_text_center(text, surface):
-    txt_surf = font.render(text, True, BLACK)
-    txt_rect = txt_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-    surface.blit(txt_surf, txt_rect)
 
-def draw_text_below(text, y):
-    txt_surf = font.render(text, True, BLACK)
-    txt_rect = txt_surf.get_rect(center=(WIDTH // 2, y))
-    screen.blit(txt_surf, txt_rect)
+def draw_template_station():
+    font = pygame.font.Font(None, 36)
+    template_text = font.render(f"Can I get {current_customer.template}", True, BLACK)
+    screen.blit(template_text, (100, 100))
 
-def check_order_correctness():
-    correct_strand = current_customer.get_complement()
-    player_strand = "".join(pizza.player_strand)
 
-    if player_strand == correct_strand:
-        draw_text_center("Order Sent! Correct DNA!", screen)
-        product.label = "Perfect DNA Pizza"
-    else:
-        draw_text_center("Oops! Still a Pizza...", screen)
-        product.label = "Weird DNA Pizza"
+def draw_unzip_station():
+    font = pygame.font.Font(None, 36)
+    unzip_text = font.render("Unzipping Template Strand...", True, BLACK)
+    screen.blit(unzip_text, (100, 100))
 
-    product.visible = True
+
+def draw_build_station():
+    font = pygame.font.Font(None, 36)
+    build_text = font.render("Building Complementary Strand:", True, BLACK)
+    screen.blit(build_text, (100, 100))
+
+    for i, base in enumerate(pizza.player_strand):
+        base_text = font.render(base if base else "_", True, BLACK)
+        screen.blit(base_text, (100 + i * 40, 200))
+
+
+def draw_delivery_station():
+    screen.blit(delivery_background_image, (0, 0))
+    product.draw(screen)
+
 
 def reset_game():
     pizza.player_strand = [""] * 8
-    global current_customer, delivery_zone_image
+    global current_customer, delivery_zone_image, station_background_image, delivery_background_image
     current_customer_name = random.choice(list(customer_data.keys()))
-    current_customer = Customer(current_customer_name, customer_data[current_customer_name])
+    customer_info = customer_data[current_customer_name]
+    current_customer = Customer(
+        current_customer_name,
+        customer_info["delivery_zone"],
+        customer_info["background"],
+        customer_info["delivery_bg"]
+    )
     delivery_zone_image = pygame.image.load(join("assets", current_customer.delivery_zone))
+    station_background_image = pygame.image.load(join("assets", current_customer.background))
+    delivery_background_image = pygame.image.load(join("assets", current_customer.delivery_bg))
     global current_station
     current_station = STATION_TEMPLATE
     product.reset_position()
     product.visible = False
 
+
+def update_backgrounds():
+    global station_background_image, delivery_background_image
+    customer_info = customer_data[current_customer.name]
+    station_background_image = pygame.image.load(join("assets", customer_info["background"]))
+    delivery_background_image = pygame.image.load(join("assets", customer_info["delivery_bg"]))
+
+
+# Initialize game state
+current_station = STARTUP_SCREEN
+pizza = Pizza()
+product = DNAProduct()
+
+# Load the first customer
+current_customer_name = random.choice(list(customer_data.keys()))
+customer_info = customer_data[current_customer_name]
+current_customer = Customer(
+    current_customer_name,
+    customer_info["delivery_zone"],
+    customer_info["background"],
+    customer_info["delivery_bg"]
+)
+delivery_zone_image = pygame.image.load(join("assets", current_customer.delivery_zone))
+station_background_image = pygame.image.load(join("assets", current_customer.background))
+delivery_background_image = pygame.image.load(join("assets", current_customer.delivery_bg))
+
+
 # Main game loop
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+def main():
+    global current_station
+    running = True
+    while running:
+        clock.tick(FPS)
+        keys = pygame.key.get_pressed()
 
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            pos = pygame.mouse.get_pos()
-            for button in buttons:
-                if button.is_clicked(pos):
-                    current_station = button.target_state
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-            if current_station == STARTUP_SCREEN:
-                if pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50).collidepoint(pos):
-                    current_station = STATION_TEMPLATE
+        if current_station == STARTUP_SCREEN:
+            draw_startup_screen()  # Draw the startup screen
+        else:
+            draw_station()  # Draw the current station
 
-            for base in draggable_bases:
-                if base.rect.collidepoint(pos):
-                    base.dragging = True
-                    mouse_x, mouse_y = pos
-                    base.offset = (base.rect.x - mouse_x, base.rect.y - mouse_y)
+        pygame.display.flip()
 
-            if product.visible and product.rect.collidepoint(pos):
-                product.dragging = True
-                mouse_x, mouse_y = pos
-                product.offset = (product.rect.x - mouse_x, product.rect.y - mouse_y)
+    pygame.quit()
 
-        elif event.type == pygame.MOUSEBUTTONUP:
-            for base in draggable_bases:
-                if base.dragging:
-                    base.dragging = False
-                    for i in range(len(pizza.player_strand)):
-                        slot_rect = pygame.Rect(WIDTH // 2 + 100, 150 + i * 40, 30, 30)
-                        if slot_rect.collidepoint(base.rect.center):
-                            pizza.player_strand[i] = base.base
-                            break
-                    base.reset_position()
 
-            if product.dragging:
-                product.dragging = False
-                if DROP_ZONE.collidepoint(product.rect.center):
-                    reset_game()
-                else:
-                    product.reset_position()
-
-        elif event.type == pygame.MOUSEMOTION:
-            for base in draggable_bases:
-                if base.dragging:
-                    mouse_x, mouse_y = event.pos
-                    base.rect.x = mouse_x + base.offset[0]
-                    base.rect.y = mouse_y + base.offset[1]
-
-            if product.dragging:
-                mouse_x, mouse_y = event.pos
-                product.rect.x = mouse_x + product.offset[0]
-                product.rect.y = mouse_y + product.offset[1]
-
-    draw_station()
-    pygame.display.flip()
-    clock.tick(60)
-
-pygame.quit()
+# Start the game loop
+main()
